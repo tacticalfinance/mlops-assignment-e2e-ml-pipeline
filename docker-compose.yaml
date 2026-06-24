@@ -1,0 +1,86 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.10.5-python3.12
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    _PIP_ADDITIONAL_REQUIREMENTS: 'mlflow boto3'
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+    NEBIUS_API_KEY: ${NEBIUS_API_KEY}
+    HOST_RUNS_DIR: ${PWD}/runs
+    HOST_LOGS_DIR: ${PWD}/logs
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./src:/opt/airflow/src
+    - ./scripts:/opt/airflow/scripts
+    - ./runs:/opt/airflow/runs
+    - ./logs:/opt/airflow/logs
+    - /var/run/docker.sock:/var/run/docker.sock
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate &&
+        airflow users create \
+          --username admin --password admin \
+          --firstname Admin --lastname User \
+          --role Admin --email admin@example.com || true
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: airflow webserver --port 8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: airflow scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.15.0
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow/mlflow.db --serve-artifacts --artifacts-destination /mlflow/artifacts --default-artifact-root mlflow-artifacts:/
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+
+volumes:
+  postgres-data:
+  mlflow-data:
