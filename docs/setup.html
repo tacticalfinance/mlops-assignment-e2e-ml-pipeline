@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Guide — MLOps E2E Pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0d14;
+      --bg-2: #111420;
+      --bg-card: #161a28;
+      --bg-code: #0e1019;
+      --text: #e4e6ee;
+      --text-2: #9399ad;
+      --text-3: #5f6478;
+      --blue: #4f8ff7;
+      --purple: #8b6cf5;
+      --green: #34d399;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --cyan: #22d3ee;
+      --pink: #ec4899;
+      --border: rgba(255,255,255,0.06);
+      --glow-blue: rgba(79,143,247,0.12);
+      --r: 14px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      font-family:'Inter',system-ui,sans-serif;
+      background:var(--bg); color:var(--text);
+      line-height:1.75; -webkit-font-smoothing:antialiased;
+    }
+    ::-webkit-scrollbar { width:7px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--bg-card); border-radius:4px; }
+
+    /* NAV */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      background:rgba(11,13,20,0.88); backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav-inner {
+      max-width:960px; margin:0 auto; height:56px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 1.5rem;
+    }
+    .nav-logo { font-weight:700; font-size:0.95rem; color:var(--blue); }
+    .nav-links { display:flex; gap:1.2rem; list-style:none; }
+    .nav-links a {
+      color:var(--text-2); text-decoration:none; font-size:0.8rem;
+      font-weight:500; transition:color .2s;
+    }
+    .nav-links a:hover { color:var(--blue); }
+    @media(max-width:700px){ .nav-links{display:none;} }
+
+    /* HERO */
+    .hero {
+      padding:120px 1.5rem 60px; text-align:center;
+      background:radial-gradient(ellipse at 50% 0%, var(--glow-blue) 0%, transparent 60%);
+    }
+    .hero .chip {
+      display:inline-block; padding:5px 14px; border-radius:20px;
+      background:rgba(79,143,247,0.1); border:1px solid rgba(79,143,247,0.2);
+      color:var(--blue); font-size:0.72rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:1.5px; margin-bottom:1.2rem;
+    }
+    .hero h1 {
+      font-size:2.8rem; font-weight:800; line-height:1.15;
+      background:linear-gradient(135deg,var(--blue),var(--purple),var(--pink));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      max-width:700px; margin:0 auto 1rem;
+    }
+    .hero p { color:var(--text-2); max-width:560px; margin:0 auto; font-size:1rem; }
+
+    /* TOC */
+    .toc {
+      max-width:960px; margin:0 auto; padding:0 1.5rem 3rem;
+    }
+    .toc-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:0.8rem;
+    }
+    .toc-item {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+      padding:1rem 1.2rem; text-decoration:none; transition:all .25s;
+    }
+    .toc-item:hover { border-color:rgba(79,143,247,0.3); transform:translateY(-2px); }
+    .toc-item .num { font-size:0.7rem; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .toc-item .label { font-size:0.88rem; font-weight:600; color:var(--text); margin-top:0.2rem; }
+
+    /* MAIN */
+    .wrap { max-width:960px; margin:0 auto; padding:0 1.5rem; }
+    section { padding:4rem 0; }
+    section + section { border-top:1px solid var(--border); }
+
+    h2 {
+      font-size:1.7rem; font-weight:700; margin-bottom:0.5rem;
+      display:flex; align-items:center; gap:0.6rem;
+    }
+    h2 .badge {
+      font-size:0.65rem; padding:3px 10px; border-radius:6px;
+      background:rgba(79,143,247,0.12); color:var(--blue);
+      font-weight:700; text-transform:uppercase; letter-spacing:1px;
+    }
+    .section-sub { color:var(--text-2); margin-bottom:2rem; max-width:680px; }
+
+    h3 { font-size:1.1rem; font-weight:600; margin:2rem 0 0.75rem; color:var(--text); }
+    h4 { font-size:0.95rem; font-weight:600; margin:1.5rem 0 0.5rem; color:var(--cyan); }
+
+    p, li { color:var(--text-2); font-size:0.92rem; }
+    ul, ol { padding-left:1.5rem; margin:0.5rem 0 1rem; }
+    li { margin-bottom:0.4rem; }
+    strong { color:var(--text); }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+
+    /* CODE */
+    pre {
+      background:var(--bg-code); border:1px solid var(--border);
+      border-radius:10px; padding:1.2rem 1.5rem; overflow-x:auto;
+      font-family:'JetBrains Mono',monospace; font-size:0.8rem;
+      line-height:1.7; color:var(--text-2); margin:1rem 0 1.5rem;
+      position:relative;
+    }
+    pre .label {
+      position:absolute; top:8px; right:12px;
+      font-size:0.62rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:1px; padding:2px 8px; border-radius:4px;
+    }
+    pre .label.bash { background:rgba(52,211,153,0.12); color:var(--green); }
+    pre .label.yaml { background:rgba(139,108,245,0.12); color:var(--purple); }
+    pre .label.json { background:rgba(245,158,11,0.12); color:var(--orange); }
+    pre .label.text { background:rgba(99,102,115,0.12); color:var(--text-3); }
+
+    code, .ic {
+      font-family:'JetBrains Mono',monospace; font-size:0.84em;
+    }
+    .ic {
+      background:rgba(79,143,247,0.1); padding:2px 7px; border-radius:5px;
+      color:var(--blue);
+    }
+
+    /* STEP CARDS */
+    .step {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r); padding:1.5rem 1.75rem; margin-bottom:1.2rem;
+      position:relative; overflow:hidden;
+    }
+    .step::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,var(--blue),var(--purple));
+      opacity:0; transition:opacity .3s;
+    }
+    .step:hover::before { opacity:1; }
+    .step:hover { border-color:rgba(79,143,247,0.2); }
+    .step h4 { margin-top:0; }
+
+    /* ALERT BOXES */
+    .alert {
+      border-radius:10px; padding:1rem 1.25rem; margin:1rem 0;
+      border-left:3px solid; font-size:0.88rem;
+    }
+    .alert.info { background:rgba(79,143,247,0.06); border-color:var(--blue); }
+    .alert.warn { background:rgba(245,158,11,0.06); border-color:var(--orange); }
+    .alert.danger { background:rgba(239,68,68,0.06); border-color:var(--red); }
+    .alert.success { background:rgba(52,211,153,0.06); border-color:var(--green); }
+    .alert strong { display:block; margin-bottom:0.3rem; }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; margin:1rem 0; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+    th,td { padding:0.75rem 1rem; text-align:left; font-size:0.85rem; }
+    th { background:rgba(79,143,247,0.07); color:var(--blue); font-weight:700; font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; }
+    td { border-top:1px solid var(--border); color:var(--text-2); }
+
+    /* STATUS DOT */
+    .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    .dot.green { background:var(--green); }
+    .dot.blue { background:var(--blue); }
+    .dot.orange { background:var(--orange); }
+
+    /* FOOTER */
+    footer { text-align:center; padding:2.5rem 1.5rem; color:var(--text-3); font-size:0.78rem; border-top:1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">⚙️ Setup Guide</div>
+    <ul class="nav-links">
+      <li><a href="#prereqs">Prerequisites</a></li>
+      <li><a href="#vm">VM Setup</a></li>
+      <li><a href="#project">Project</a></li>
+      <li><a href="#compose">Docker Compose</a></li>
+      <li><a href="#run">Run Pipeline</a></li>
+      <li><a href="#download">Download Results</a></li>
+      <li><a href="#troubleshooting">Troubleshoot</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="chip">Complete Server Setup Guide</div>
+  <h1>From Zero to Running Pipeline</h1>
+  <p>Step-by-step instructions to provision a VM, install all dependencies, deploy the infrastructure, and run your first evaluation pipeline.</p>
+</header>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-grid">
+    <a href="#prereqs" class="toc-item"><div class="num">Step 1</div><div class="label">Prerequisites</div></a>
+    <a href="#vm" class="toc-item"><div class="num">Step 2</div><div class="label">VM & Docker</div></a>
+    <a href="#project" class="toc-item"><div class="num">Step 3</div><div class="label">Project Setup</div></a>
+    <a href="#compose" class="toc-item"><div class="num">Step 4</div><div class="label">Docker Compose</div></a>
+    <a href="#run" class="toc-item"><div class="num">Step 5</div><div class="label">Run Pipeline</div></a>
+    <a href="#download" class="toc-item"><div class="num">Step 6</div><div class="label">Download Results</div></a>
+    <a href="#mlflow" class="toc-item"><div class="num">Step 7</div><div class="label">MLflow</div></a>
+    <a href="#troubleshooting" class="toc-item"><div class="num">Step 8</div><div class="label">Troubleshooting</div></a>
+  </div>
+</div>
+
+<main class="wrap">
+
+<!-- ══════════════════ 1. PREREQUISITES ══════════════════ -->
+<section id="prereqs">
+  <h2><span class="badge">Step 1</span> Prerequisites</h2>
+  <p class="section-sub">What you need before starting.</p>
+
+  <table>
+    <thead><tr><th>Requirement</th><th>Details</th></tr></thead>
+    <tbody>
+      <tr><td><strong>VM</strong></td><td>CPU VM with <strong>8 vCPU</strong>, <strong>32 GB RAM</strong>, public IP (Nebius Cloud recommended)</td></tr>
+      <tr><td><strong>OS</strong></td><td>Ubuntu 22.04 or 24.04 LTS</td></tr>
+      <tr><td><strong>SSH Key</strong></td><td>Your public SSH key added to the VM</td></tr>
+      <tr><td><strong>Nebius API Key</strong></td><td>From <a href="https://studio.nebius.com/">Nebius Studio</a> — needed for LLM inference</td></tr>
+      <tr><td><strong>Local Machine</strong></td><td>SSH client, web browser for Airflow UI (port 8080) and MLflow UI (port 5000)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert info">
+    <strong>💡 No GPU required</strong>
+    <p>The agent uses a hosted LLM API (Kimi-K2.6 on Nebius). All compute is CPU-based for Docker containers.</p>
+  </div>
+
+  <h3>SSH Config (Recommended)</h3>
+  <p>Add your VM to <span class="ic">~/.ssh/config</span> for easier access:</p>
+  <pre><span class="label bash">~/.ssh/config</span>
+Host mlops-vm
+  HostName &lt;YOUR-VM-PUBLIC-IP&gt;
+  User &lt;YOUR-USERNAME&gt;
+  ForwardAgent yes
+  IdentityFile ~/.ssh/id_rsa</pre>
+  <p>Then connect with: <span class="ic">ssh mlops-vm</span></p>
+</section>
+
+<!-- ══════════════════ 2. VM SETUP ══════════════════ -->
+<section id="vm">
+  <h2><span class="badge">Step 2</span> VM & Docker Installation</h2>
+  <p class="section-sub">Install Docker, Docker Compose, and uv on your fresh VM.</p>
+
+  <div class="step">
+    <h4>2.1 — Install uv (Python package manager)</h4>
+    <pre><span class="label bash">bash</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc   # reload PATH</pre>
+  </div>
+
+  <div class="step">
+    <h4>2.2 — Install Docker Engine</h4>
+    <pre><span class="label bash">bash</span>
+# Install prerequisites
+sudo apt update
+sudo apt install -y ca-certificates curl
+
+# Add Docker's official GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add Docker repository
+sudo tee /etc/apt/sources.list.d/docker.sources &lt;&lt;EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+
+# Install Docker + Compose plugin
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin</pre>
+  </div>
+
+  <div class="step">
+    <h4>2.3 — Allow Docker without sudo</h4>
+    <pre><span class="label bash">bash</span>
+sudo groupadd -f docker
+sudo usermod -aG docker "$USER"
+sudo chmod 666 /var/run/docker.sock
+
+# Verify
+docker run hello-world</pre>
+  </div>
+
+  <div class="step">
+    <h4>2.4 — Verify installations</h4>
+    <pre><span class="label bash">bash</span>
+docker --version        # Docker version 27.x+
+docker compose version  # Docker Compose v2.x+
+uv --version            # uv 0.x+</pre>
+  </div>
+</section>
+
+<!-- ══════════════════ 3. PROJECT SETUP ══════════════════ -->
+<section id="project">
+  <h2><span class="badge">Step 3</span> Project Setup</h2>
+  <p class="section-sub">Clone the repo, configure environment variables, and build the Docker image.</p>
+
+  <div class="step">
+    <h4>3.1 — Clone the repository</h4>
+    <pre><span class="label bash">bash</span>
+git clone &lt;YOUR-REPO-URL&gt;
+cd mlops-assignment-e2e-ml-pipeline</pre>
+  </div>
+
+  <div class="step">
+    <h4>3.2 — Configure environment variables</h4>
+    <pre><span class="label bash">bash</span>
+cp .env.example .env
+nano .env</pre>
+    <p>Edit <span class="ic">.env</span> and set your Nebius API key:</p>
+    <pre><span class="label text">.env</span>
+# ── Inference ──
+NEBIUS_API_KEY=your_actual_nebius_api_key_here
+
+# ── MLflow tracking ──
+MLFLOW_TRACKING_URI=http://mlflow:5000
+
+# ── S3 / Object Storage (optional) ──
+S3_ENDPOINT_URL=
+S3_BUCKET=mlops-assignment-artifacts
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=</pre>
+
+    <div class="alert warn">
+      <strong>⚠️ Critical: Set MLFLOW_TRACKING_URI correctly</strong>
+      <p>For Docker Compose mode, use <span class="ic">http://mlflow:5000</span> (Docker DNS).<br>
+      For standalone mode, use <span class="ic">http://localhost:5000</span>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <h4>3.3 — Install Python dependencies</h4>
+    <pre><span class="label bash">bash</span>
+uv sync
+source .venv/bin/activate</pre>
+  </div>
+
+  <div class="step">
+    <h4>3.4 — Build the Docker image</h4>
+    <p>This image is used by Airflow's <span class="ic">DockerOperator</span> for the agent and evaluation tasks:</p>
+    <pre><span class="label bash">bash</span>
+uv lock
+docker build -t mlops-pipeline:latest .</pre>
+    <p>This builds an Ubuntu 24.04 container with Docker CLI, uv, and all project Python dependencies locked via <span class="ic">uv.lock</span>.</p>
+
+    <div class="alert info">
+      <strong>💡 Build time</strong>
+      <p>First build may take 3-5 minutes due to dependency installation. Subsequent builds use Docker cache.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <h4>3.5 — Set directory permissions</h4>
+    <p>Airflow runs as a non-root user (UID 50000). Docker containers create files as root. We need broad permissions to prevent <span class="ic">PermissionError</span>:</p>
+    <pre><span class="label bash">bash</span>
+mkdir -p runs logs
+chmod -R 777 runs logs</pre>
+  </div>
+
+  <div class="step">
+    <h4>3.6 — (Optional) Clone reference repositories</h4>
+    <p>Not required for running, but useful for debugging agent behavior:</p>
+    <pre><span class="label bash">bash</span>
+cd ..
+git clone https://github.com/SWE-agent/mini-swe-agent.git
+git clone https://github.com/swe-bench/SWE-bench.git
+cd mlops-assignment-e2e-ml-pipeline</pre>
+  </div>
+</section>
+
+<!-- ══════════════════ 4. DOCKER COMPOSE ══════════════════ -->
+<section id="compose">
+  <h2><span class="badge">Step 4</span> Deploy with Docker Compose</h2>
+  <p class="section-sub">Launch the full infrastructure: PostgreSQL, Airflow (webserver + scheduler), and MLflow.</p>
+
+  <div class="step">
+    <h4>4.1 — Start all services</h4>
+    <pre><span class="label bash">bash</span>
+docker compose up -d</pre>
+    <p>This starts 5 containers:</p>
+    <table>
+      <thead><tr><th>Service</th><th>Port</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot green"></span><strong>postgres</strong></td><td>5432</td><td>Airflow metadata database</td></tr>
+        <tr><td><span class="dot blue"></span><strong>airflow-init</strong></td><td>—</td><td>One-shot: DB migration + admin user creation</td></tr>
+        <tr><td><span class="dot blue"></span><strong>airflow-webserver</strong></td><td>8080</td><td>Airflow web UI</td></tr>
+        <tr><td><span class="dot blue"></span><strong>airflow-scheduler</strong></td><td>—</td><td>Executes DAG tasks via LocalExecutor</td></tr>
+        <tr><td><span class="dot orange"></span><strong>mlflow</strong></td><td>5000</td><td>MLflow tracking server with SQLite backend</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <h4>4.2 — Wait for initialization</h4>
+    <p>Airflow needs ~60 seconds for database migration. Monitor progress:</p>
+    <pre><span class="label bash">bash</span>
+# Watch all containers
+docker compose logs -f
+
+# Check health specifically
+docker compose ps</pre>
+    <p>You should see all services as <strong>Up (healthy)</strong> or <strong>Up</strong>.</p>
+  </div>
+
+  <div class="step">
+    <h4>4.3 — Set up SSH port forwarding</h4>
+    <p>From your <strong>local machine</strong>, forward ports to access the web UIs:</p>
+    <pre><span class="label bash">local terminal</span>
+ssh -L 8080:localhost:8080 -L 5000:localhost:5000 mlops-vm</pre>
+    <p>Then open in your browser:</p>
+    <table>
+      <thead><tr><th>Service</th><th>URL</th><th>Credentials</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Airflow</strong></td><td><a href="http://localhost:8080">http://localhost:8080</a></td><td>admin / admin</td></tr>
+        <tr><td><strong>MLflow</strong></td><td><a href="http://localhost:5000">http://localhost:5000</a></td><td>No auth required</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <h4>4.4 — Verify Airflow sees the DAG</h4>
+    <ol>
+      <li>Open <a href="http://localhost:8080">http://localhost:8080</a></li>
+      <li>Login with <strong>admin / admin</strong></li>
+      <li>You should see <span class="ic">evaluate-agent-docker</span> in the DAG list</li>
+      <li>If not, wait 30 more seconds — the scheduler needs to parse the DAG file</li>
+    </ol>
+  </div>
+
+  <h3>Alternative: Standalone Mode (No Docker Compose)</h3>
+  <p>For quick testing without Docker Compose:</p>
+  <pre><span class="label bash">bash</span>
+# Terminal 1: Start Airflow
+bash run-airflow-standalone.sh
+
+# Terminal 2: Start MLflow
+uv run mlflow server --host 0.0.0.0 --port 5000</pre>
+  <div class="alert info">
+    <strong>💡 Standalone vs Docker Compose</strong>
+    <p>Standalone mode uses SQLite for Airflow and runs directly on the host. Docker Compose mode uses PostgreSQL and is the production-recommended approach.</p>
+  </div>
+</section>
+
+<!-- ══════════════════ 5. RUN PIPELINE ══════════════════ -->
+<section id="run">
+  <h2><span class="badge">Step 5</span> Run the Evaluation Pipeline</h2>
+  <p class="section-sub">Trigger a full agent → evaluation → metrics → MLflow run from the Airflow UI.</p>
+
+  <div class="step">
+    <h4>5.1 — Trigger the DAG</h4>
+    <ol>
+      <li>Open <a href="http://localhost:8080">Airflow UI</a></li>
+      <li>Find the <span class="ic">evaluate-agent-docker</span> DAG</li>
+      <li>Click the <strong>▶ Play</strong> button → <strong>Trigger DAG w/ config</strong></li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h4>5.2 — Configure parameters</h4>
+    <p>Fill in the configuration form:</p>
+    <table>
+      <thead><tr><th>Parameter</th><th>Recommended Value</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ic">split</span></td><td>test</td><td>Dataset split</td></tr>
+        <tr><td><span class="ic">subset</span></td><td>verified</td><td>SWE-bench Verified (500 tasks)</td></tr>
+        <tr><td><span class="ic">workers</span></td><td>5</td><td>Parallel agents (1-20)</td></tr>
+        <tr><td><span class="ic">model</span></td><td>nebius/moonshotai/Kimi-K2.6</td><td>LLM model ID on Nebius</td></tr>
+        <tr><td><span class="ic">task_slice</span></td><td>0:1</td><td>Run only 1 task (quick test)</td></tr>
+        <tr><td><span class="ic">run_id</span></td><td>my_run_001</td><td>Unique identifier (auto-generated if empty)</td></tr>
+        <tr><td><span class="ic">cost_limit</span></td><td>2.0</td><td>Max USD per agent instance</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert warn">
+      <strong>⚠️ Important: Use a unique run_id every time</strong>
+      <p>SWE-bench creates Docker containers named after the run_id. Reusing an ID causes a 409 Conflict error. Either enter a unique name or leave it blank for auto-generation.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <h4>5.3 — Monitor execution</h4>
+    <p>Click on the running DAG to see the 4-stage pipeline progress:</p>
+    <table>
+      <thead><tr><th>Stage</th><th>Expected Duration</th><th>What It Does</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot green"></span><strong>prepare_run</strong></td><td>~1 second</td><td>Creates run directory + config.json</td></tr>
+        <tr><td><span class="dot blue"></span><strong>run_agent</strong></td><td>~2-5 minutes</td><td>LLM agent solves the coding task inside Docker</td></tr>
+        <tr><td><span class="dot blue"></span><strong>run_eval</strong></td><td>~1-2 minutes</td><td>SWE-bench evaluates the agent's patch</td></tr>
+        <tr><td><span class="dot green"></span><strong>summarize_and_log</strong></td><td>~2 seconds</td><td>Parses results, writes metrics, logs to MLflow</td></tr>
+      </tbody>
+    </table>
+    <p>Click on any task → <strong>Log</strong> to see real-time output.</p>
+  </div>
+
+  <div class="step">
+    <h4>5.4 — Verify the run completed</h4>
+    <p>On the server, check the generated artifacts:</p>
+    <pre><span class="label bash">bash</span>
+# List the run directory
+ls -la runs/my_run_001/
+
+# Check metrics
+cat runs/my_run_001/metrics.json
+
+# Check results
+cat runs/my_run_001/run-eval/results.json
+
+# Check manifest
+cat runs/my_run_001/manifest.json</pre>
+    <p>Expected <span class="ic">metrics.json</span> output:</p>
+    <pre><span class="label json">metrics.json</span>
+{
+  "total_instances": 1,
+  "submitted_instances": 1,
+  "completed_instances": 1,
+  "resolved_instances": 1,
+  "unresolved_instances": 0,
+  "error_instances": 0,
+  "resolve_rate": 1.0
+}</pre>
+  </div>
+</section>
+
+<!-- ══════════════════ 6. DOWNLOAD RESULTS ══════════════════ -->
+<section id="download">
+  <h2><span class="badge">Step 6</span> Download Results to Local Machine</h2>
+  <p class="section-sub">Copy the run folder from the remote server for committing to your repository.</p>
+
+  <div class="step">
+    <h4>6.1 — Download via SCP</h4>
+    <p>From your <strong>local machine</strong>:</p>
+    <pre><span class="label bash">local terminal</span>
+# Download the entire run folder
+scp -r mlops-vm:~/mlops-assignment-e2e-ml-pipeline/runs/my_run_001 \
+  ./runs/my_run_001</pre>
+  </div>
+
+  <div class="step">
+    <h4>6.2 — Commit the run to your repo</h4>
+    <pre><span class="label bash">local terminal</span>
+# Update .gitignore to track this specific run
+# (edit the !/runs/XXXX/ line to match your run_id)
+
+git add runs/my_run_001 .gitignore REPORT.md
+git commit -m "docs: add authentic evaluation run my_run_001"
+git push</pre>
+  </div>
+
+  <div class="step">
+    <h4>6.3 — Verify the folder structure</h4>
+    <p>Your committed run should contain:</p>
+    <pre><span class="label text">expected structure</span>
+runs/my_run_001/
+├── config.json                    # Run parameters
+├── metrics.json                   # Aggregated metrics
+├── manifest.json                  # Index of all artifacts
+├── run-agent/
+│   ├── preds.json                 # Agent's predictions (patches)
+│   ├── minisweagent.log           # Agent execution log
+│   └── &lt;instance_id&gt;/
+│       └── &lt;instance_id&gt;.traj.json  # Full agent trajectory
+└── run-eval/
+    ├── results.json               # Aggregated evaluation summary
+    ├── reports/                    # Per-instance pass/fail reports
+    └── logs/                      # SWE-bench container logs</pre>
+  </div>
+</section>
+
+<!-- ══════════════════ 7. MLFLOW ══════════════════ -->
+<section id="mlflow">
+  <h2><span class="badge">Step 7</span> View Results in MLflow</h2>
+  <p class="section-sub">Compare runs, analyze metrics, and download artifacts from the MLflow UI.</p>
+
+  <div class="step">
+    <h4>7.1 — Open MLflow</h4>
+    <p>Navigate to <a href="http://localhost:5000">http://localhost:5000</a> (with port forwarding active).</p>
+  </div>
+
+  <div class="step">
+    <h4>7.2 — Find your experiment</h4>
+    <ol>
+      <li>Select the <span class="ic">swe-bench-evaluation</span> experiment from the sidebar</li>
+      <li>Each pipeline execution appears as a separate MLflow Run</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h4>7.3 — Explore a run</h4>
+    <p>Click on a run to see:</p>
+    <ul>
+      <li><strong>Parameters:</strong> model, split, subset, workers, run_id, task_slice, cost_limit</li>
+      <li><strong>Metrics:</strong> total_instances, resolved_instances, resolve_rate, etc.</li>
+      <li><strong>Artifacts:</strong> config.json, metrics.json, manifest.json, preds.json</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <h4>7.4 — Compare multiple runs</h4>
+    <ol>
+      <li>Select multiple runs using the checkboxes</li>
+      <li>Click <strong>Compare</strong></li>
+      <li>View side-by-side parameter and metric comparisons</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══════════════════ 8. TROUBLESHOOTING ══════════════════ -->
+<section id="troubleshooting">
+  <h2><span class="badge">Step 8</span> Troubleshooting</h2>
+  <p class="section-sub">Common issues and their solutions.</p>
+
+  <div class="step">
+    <h4>🐳 409 Conflict: Container name already in use</h4>
+    <p><strong>Cause:</strong> You reused a <span class="ic">run_id</span> from a previous run. SWE-bench names containers after the run_id.</p>
+    <pre><span class="label bash">fix</span>
+# Remove the stale container
+docker rm -f sweb.eval.astropy__astropy-12907.&lt;old_run_id&gt;
+
+# Or just use a new, unique run_id next time</pre>
+  </div>
+
+  <div class="step">
+    <h4>🔒 PermissionError: Permission denied on results.json</h4>
+    <p><strong>Cause:</strong> Docker containers create files as root. Airflow runs as UID 50000.</p>
+    <pre><span class="label bash">fix</span>
+# Reset permissions on the runs directory
+sudo chmod -R 777 runs/
+
+# The pipeline code already handles this gracefully via os.remove() fallback</pre>
+  </div>
+
+  <div class="step">
+    <h4>🌐 DAG not showing in Airflow UI</h4>
+    <p><strong>Cause:</strong> Scheduler hasn't parsed the DAG file yet, or there's a Python import error.</p>
+    <pre><span class="label bash">fix</span>
+# Check for import errors
+docker compose logs airflow-scheduler | grep -i error
+
+# Force re-parse by touching the DAG file
+touch dags/evaluate_agent_docker.py
+
+# Wait 30 seconds, then refresh the Airflow UI</pre>
+  </div>
+
+  <div class="step">
+    <h4>🔑 Agent fails with API key error</h4>
+    <p><strong>Cause:</strong> <span class="ic">NEBIUS_API_KEY</span> not set or not propagated to Docker containers.</p>
+    <pre><span class="label bash">fix</span>
+# Verify the key is set in your .env file
+grep NEBIUS_API_KEY .env
+
+# Restart services to pick up .env changes
+docker compose down
+docker compose up -d</pre>
+  </div>
+
+  <div class="step">
+    <h4>📦 Docker image not found: mlops-pipeline:latest</h4>
+    <p><strong>Cause:</strong> You forgot to build the Docker image, or built it in a different context.</p>
+    <pre><span class="label bash">fix</span>
+# Build the image
+docker build -t mlops-pipeline:latest .
+
+# Verify it exists
+docker images | grep mlops-pipeline</pre>
+  </div>
+
+  <div class="step">
+    <h4>🔄 MLflow connection refused</h4>
+    <p><strong>Cause:</strong> MLflow container not running, or <span class="ic">MLFLOW_TRACKING_URI</span> misconfigured.</p>
+    <pre><span class="label bash">fix</span>
+# Check if MLflow is running
+docker compose ps mlflow
+
+# For Docker Compose, use http://mlflow:5000 (not localhost)
+# For standalone mode, use http://localhost:5000
+
+# Restart if needed
+docker compose restart mlflow</pre>
+  </div>
+
+  <div class="step">
+    <h4>⏱️ Agent task times out or hangs</h4>
+    <p><strong>Cause:</strong> The agent is waiting for LLM responses. Each task can take 2-5 minutes.</p>
+    <pre><span class="label bash">fix</span>
+# Check live logs of the running agent container
+docker ps  # find the mlops-pipeline container
+docker logs -f &lt;container_id&gt;
+
+# If truly stuck, the DAG has execution_timeout=None (no timeout)
+# You can manually kill the container:
+docker kill &lt;container_id&gt;</pre>
+  </div>
+
+  <h3>Useful Debug Commands</h3>
+  <pre><span class="label bash">bash</span>
+# View all running containers
+docker ps
+
+# View all Airflow logs
+docker compose logs -f airflow-scheduler
+
+# Check disk space (Docker images can be large)
+df -h
+
+# Clean up old Docker containers and images
+docker system prune -f
+
+# Restart everything from scratch
+docker compose down -v
+docker compose up -d</pre>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <p>MLOps Pipeline Setup Guide · Nebius Academy · AI Performance Engineering · June 2026</p>
+</footer>
+
+</body>
+</html>
